@@ -1,0 +1,29 @@
+# Dockerfile.multi: 복합적인 시나리오 (멀티 스테이지, 다른 레지스트리 등)
+
+# --- Build Stage ---
+    FROM golang:1.19-alpine AS builder
+
+    WORKDIR /src
+    COPY main.go .
+    # GOARCH는 빌드 환경에 따라 설정될 수 있음
+    RUN go build -o /app/my_app main.go
+    
+    # --- Intermediate Stage (다른 레지스트리 예시) ---
+    FROM docker.io/bitnami/redis:latest AS redis-base
+    # FROM ghcr.io/octocat/hello-world:latest AS ghcr-example # GHCR 예시 (현재 unknown 예상)
+    
+    # --- Final Stage ---
+    FROM scratch
+    
+    # 빌더에서 바이너리 복사
+    COPY --from=builder /app/my_app /app/my_app
+    
+    # 다른 이미지에서 설정 파일 복사 예시 (latest 태그)
+    FROM nginx
+    COPY --from=0 /etc/nginx/nginx.conf /etc/nginx/nginx.conf 
+    # 이전 스테이지 참조
+    
+    # 이 라인은 최종 이미지에 영향을 주지 않지만, 분석기는 참조된 nginx 이미지도 검사해야 함
+    
+    WORKDIR /app
+    CMD ["/app/my_app"]

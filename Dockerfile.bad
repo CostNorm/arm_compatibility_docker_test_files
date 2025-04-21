@@ -1,0 +1,24 @@
+# Dockerfile.bad: ARM 마이그레이션 가능성이 낮은 시나리오
+
+# 오래된 OS 버전 또는 특정 아키텍처 이미지를 가정 (CentOS 7은 실제론 multi-arch)
+# 만약 이 이미지가 ARM 지원 안한다고 나오거나, 다른 라인에서 문제가 발견될 것
+FROM centos:7
+
+# 명백한 x86 종속성 추가 (Debian/Ubuntu 계열 명령어 예시)
+# 실제 CentOS에서는 dpkg/apt-get을 쓰지 않지만, 테스트 패턴용으로 포함
+RUN echo "Adding amd64 architecture explicitly (for testing pattern)"
+# RUN dpkg --add-architecture amd64 && apt-get update
+
+# x86_64 아키텍처용 패키지 설치 시도 (CentOS 방식)
+RUN yum install -y epel-release && \
+    yum install -y some-package.x86_64 # 명시적인 x86_64 패키지
+
+# 특정 amd64 바이너리 다운로드
+RUN curl -L https://example.com/downloads/my_tool_v1.2_amd64.deb -o /tmp/my_tool.deb
+# RUN apt-get install -y /tmp/my_tool.deb
+
+WORKDIR /app
+
+COPY . .
+
+CMD ["/app/run.sh"]

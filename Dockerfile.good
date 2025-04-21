@@ -1,0 +1,35 @@
+# Dockerfile.good: ARM 마이그레이션 가능성이 높은 시나리오
+# 베이스 이미지는 multi-arch를 지원하지만, --platform 플래그가 있음
+FROM --platform=linux/amd64 python:alpine AS builder
+
+WORKDIR /app
+
+# 표준 패키지 설치 (ARM에서도 문제 없음)
+# 멀티라인 RUN 명령어 테스트
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends gcc build-essential && \
+    rm -rf /var/lib/apt/lists/*
+
+# pip 설치 (ARM 호환)
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# TARGETARCH 사용 예시 (좋은 패턴)
+ARG TARGETARCH
+RUN echo "Building for architecture: ${TARGETARCH:-amd64}"
+
+COPY . .
+
+# 간단한 두 번째 스테이지 (multi-arch 베이스)
+FROM python:alpine
+
+WORKDIR /app
+
+COPY --from=builder /app /app
+
+# 주석 처리된 라인
+# RUN dpkg --add-architecture amd64
+
+# 빈 줄
+
+CMD ["python", "app.py"]
